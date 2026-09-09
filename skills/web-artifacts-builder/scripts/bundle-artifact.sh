@@ -50,7 +50,5 @@ echo ""
 echo "✅ Bundle complete!"
 echo "📄 Output: bundle.html ($FILE_SIZE)"
 echo ""
-echo "You can now use this single HTML file as an artifact in AI coding assistants or chat sessions that support HTML attachments."
+echo "You can now use this single HTML file as an artifact in Claude conversations."
 echo "To test locally: open bundle.html in your browser"
-# Cross-platform: see AGENTS.md in the repository root for deployment details.
-

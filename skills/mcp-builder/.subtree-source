@@ -1,9 +1,0 @@
-# Subtree Source Information
-# This directory is maintained as a snapshot from an upstream repository.
-# DO NOT manually edit files in this directory.
-# Use the update script to pull in changes from upstream.
-
-SOURCE_REPO=https://github.com/anthropics/skills.git
-SOURCE_PATH=skills/mcp-builder
-LAST_SYNC_COMMIT=887114fd09f8f24a7e6c907f9ee505348498ab6a
-LAST_SYNC_DATE=2026-03-22 12:16:01 -0400

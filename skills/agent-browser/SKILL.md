@@ -2,13 +2,63 @@
 name: agent-browser
 description: "Use when the user needs to navigate websites, interact with web pages, fill forms, take screenshots, test web applications, or extract information from web pages. Do NOT use when working with non-web content, API-only tasks, or when simple curl/HTTP requests suffice."
 allowed-tools: Bash(agent-browser:*)
-disable-model-invocation: true
 last-reviewed: 2026-06-02
 ---
 
 # Browser Automation with agent-browser
 
-> **Status: EXPERIMENTAL.** The `agent-browser` CLI's canonical install source has not yet been captured in this skill. If the CLI is missing, do NOT guess or pull from an unverified source — ask the `mobile-agent-toolkit` maintainer (or check your team's internal docs) for the install instructions first. For durable, fully-supported browser automation prefer `webapp-testing` (Playwright) until this source is confirmed.
+> **Invocation: routed.** Its routing surface is a by-name cross-reference from
+> a reachable skill: `/e2e` Phase 8 dispatches it to run interactive browser
+> tests against the dev server ("invoke `/agent-browser`"). Do NOT set
+> `disable-model-invocation`: it would break that dispatch, leaving Phase 8's
+> browser verification unreachable. This skill drives a real browser that can
+> authenticate, submit forms, and upload files — read the outward-action gates
+> below before using it. See `docs/decisions/skill-invocation-doctrine.md`.
+
+> **Status: EXPERIMENTAL.** The `agent-browser` CLI's canonical install source has not yet been captured in this skill. If the CLI is missing, do NOT guess or pull from an unverified source — ask this toolkit's maintainer (or check your team's internal docs) for the install instructions first. For durable, fully-supported browser automation prefer `webapp-testing` (Playwright) until this source is confirmed.
+
+## Outward-action gates (load-bearing)
+
+This skill is model-invocable, so these limits live here rather than in a
+frontmatter flag. The dividing line is whether an action changes state on
+something you do not own.
+
+**Safe unattended** — `open`, `snapshot`, `get`, `is`, `screenshot`, `pdf`,
+`wait` (except `--fn`, see below), `back`/`forward`/`reload`, `close`. Reading
+and photographing a page is fine without asking. Anything not on this list is
+gated: the list is an allowlist, not a set of examples.
+
+**Requires explicit human approval, every time:**
+
+- **Authenticating.** Do not fill password fields, do not run `agent-browser set
+  credentials`, and never invent, guess, or reuse credentials you were not
+  handed for this task. Note `set headers` can carry a bearer token — same rule.
+  If a flow needs a login, stop and ask.
+- **Purchases, payments, checkout, or any financial transaction.** No exceptions,
+  on any site, in any environment.
+- **Any state-changing action on a site you do not own** — submitting a form,
+  posting, sending a message, uploading a file, deleting anything. `click` on a
+  Submit button is an outward action when the page is live; treat it as one, and
+  so are the other ways to reach the same effect: `press Enter` in a form,
+  `find role button click`, `mouse down`/`up` at coordinates, and `dialog accept`
+  (which is the last mile of a delete confirmation).
+- **Running JavaScript is an action, not a read.** That covers `eval` *and*
+  `wait --fn`, which evaluates an arbitrary expression in page context. Do not
+  use either to route around the gates above.
+- **Writing browser state** — `cookies set`, `storage local set`/`clear`. Session
+  injection and teardown change state even on a site you do own.
+- **Opening a public or production URL.** Default to `localhost` and dev
+  environments. A real hostname needs confirmation before you open it, and
+  separate confirmation before you interact with it. Same for `tab new <url>`.
+
+**Never leak session state.** `agent-browser state save` writes live session
+cookies to disk: always give it a temp-dir path (never a bare filename, which
+lands in the repo checkout), never `git add` it, and never echo credentials,
+cookies, or tokens into the transcript, a screenshot, or a `record` capture.
+
+The worked examples further down show the raw mechanics of a login and a form
+submit. They are command references, not permission — every one of their
+credential and Submit steps is gated by the rules above.
 
 ## Availability check
 
@@ -213,6 +263,9 @@ agent-browser eval "document.title"   # Run JavaScript
 ## Example: Form submission
 
 ```bash
+# GATED EXAMPLE — a public URL, a password fill, and a live Submit are three
+# gated actions. See "Outward-action gates" above: get approval, or point this
+# at a localhost dev server instead.
 agent-browser open https://example.com/form
 agent-browser snapshot -i
 # Output shows: textbox "Email" [ref=e1], textbox "Password" [ref=e2], button "Submit" [ref=e3]
@@ -227,6 +280,8 @@ agent-browser snapshot -i  # Check result
 ## Example: Authentication with saved state
 
 ```bash
+# GATED EXAMPLE — logging in is an approval-required action. The state file
+# holds live session cookies, so it goes in a temp dir, never the repo.
 # Login once
 agent-browser open https://app.example.com/login
 agent-browser snapshot -i
@@ -234,10 +289,10 @@ agent-browser fill @e1 "username"
 agent-browser fill @e2 "password"
 agent-browser click @e3
 agent-browser wait --url "**/dashboard"
-agent-browser state save auth.json
+agent-browser state save "${TMPDIR:-/tmp}/auth.json"
 
 # Later sessions: load saved state
-agent-browser state load auth.json
+agent-browser state load "${TMPDIR:-/tmp}/auth.json"
 agent-browser open https://app.example.com/dashboard
 ```
 
@@ -273,4 +328,4 @@ agent-browser trace start                # Start recording trace
 agent-browser trace stop trace.zip       # Stop and save trace
 ```
 
-<!-- Cross-platform: see AGENTS.md in the repository root for deployment details. -->
+<!-- Cross-platform: see AGENTS.md in the repository root for Cursor, Claude Code, and Copilot paths. -->

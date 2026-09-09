@@ -1,9 +1,0 @@
-# Subtree Source Information
-# This directory is maintained as a snapshot from an upstream repository.
-# DO NOT manually edit files in this directory.
-# Use the update script to pull in changes from upstream.
-
-SOURCE_REPO=https://github.com/affaan-m/everything-claude-code.git
-SOURCE_PATH=skills/frontend-design
-LAST_SYNC_COMMIT=1a50145d39c0fa415311da62e7a018edd4e6d976
-LAST_SYNC_DATE=2026-04-15 20:07:04 -0700

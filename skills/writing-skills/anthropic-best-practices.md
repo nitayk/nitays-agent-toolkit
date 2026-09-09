@@ -1148,5 +1148,3 @@ Before sharing a Skill, verify:
     Upload and use Skills programmatically
   </Card>
 </CardGroup>
-
-<!-- Cross-platform: see AGENTS.md in the repository root for deployment details. -->

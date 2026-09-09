@@ -1,20 +1,19 @@
 ---
 name: web-artifacts-builder
-description: Suite of tools for creating elaborate, multi-component interactive HTML artifacts using modern frontend web technologies (React, Tailwind CSS, shadcn/ui). Use for complex artifacts requiring state management, routing, or shadcn/ui components - not for simple single-file HTML/JSX artifacts. Use whenever the user needs a rich downloadable HTML artifact in AI coding assistants or chat sessions that support attachments (including Claude, Cursor, Copilot, and similar).
+description: Suite of tools for creating elaborate, multi-component claude.ai HTML artifacts using modern frontend web technologies (React, Tailwind CSS, shadcn/ui). Use for complex artifacts requiring state management, routing, or shadcn/ui components - not for simple single-file HTML/JSX artifacts.
 license: Complete terms in LICENSE.txt
-last-reviewed: 2026-05-20
 ---
 
 # Web Artifacts Builder
 
-To build powerful frontend interactive HTML artifacts, follow these steps:
+To build powerful frontend claude.ai artifacts, follow these steps:
 1. Initialize the frontend repo using `scripts/init-artifact.sh`
 2. Develop your artifact by editing the generated code
 3. Bundle all code into a single HTML file using `scripts/bundle-artifact.sh`
 4. Display artifact to user
 5. (Optional) Test the artifact
 
-**Stack**: React 19 + TypeScript + Vite + Parcel (bundling) + Tailwind CSS 4 + shadcn/ui
+**Stack**: React 18 + TypeScript + Vite + Parcel (bundling) + Tailwind CSS + shadcn/ui
 
 ## Design & Style Guidelines
 
@@ -31,8 +30,8 @@ cd <project-name>
 ```
 
 This creates a fully configured project with:
-- ✅ React 19 + TypeScript (via Vite)
-- ✅ Tailwind CSS 4 with shadcn/ui theming system
+- ✅ React + TypeScript (via Vite)
+- ✅ Tailwind CSS 3.4.1 with shadcn/ui theming system
 - ✅ Path aliases (`@/`) configured
 - ✅ 40+ shadcn/ui components pre-installed
 - ✅ All Radix UI dependencies included
@@ -50,7 +49,7 @@ To bundle the React app into a single HTML artifact:
 bash scripts/bundle-artifact.sh
 ```
 
-This creates `bundle.html` - a self-contained artifact with all JavaScript, CSS, and dependencies inlined. This file can be shared as a downloadable HTML artifact in AI coding assistants or chat sessions that support attachments.
+This creates `bundle.html` - a self-contained artifact with all JavaScript, CSS, and dependencies inlined. This file can be directly shared in Claude conversations as an artifact.
 
 **Requirements**: Your project must have an `index.html` in the root directory.
 
@@ -73,5 +72,3 @@ To test/visualize the artifact, use available tools (including other Skills or b
 ## Reference
 
 - **shadcn/ui components**: https://ui.shadcn.com/docs/components
-
-<!-- Cross-platform: see AGENTS.md in the repository root for deployment details. -->

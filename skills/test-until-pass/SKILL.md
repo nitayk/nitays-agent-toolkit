@@ -1,11 +1,18 @@
 ---
 name: test-until-pass
 description: "Use when failing tests need a bounded fix-and-retry loop with explicit guardrails (flake detection, no-progress halt, anti-weakening rule). Targets the specific test(s) that failed, not the whole suite. Triggers: 'fix the tests', 'test until pass', '/test-until-pass'. Do NOT use to run tests once (use the test runner directly), to fix tests known to be flaky (fix flakiness first), or for tests where the failure is genuinely a spec change (re-spec first)."
-disable-model-invocation: true
 last-reviewed: 2026-05-20
 ---
 
 # Test Until Pass
+
+> **Invocation: routed.** Its routing surface is a by-name cross-reference from
+> a reachable skill: `/e2e` Phase 8 dispatches it ("For flaky suites or long
+> retry cycles, invoke `/test-until-pass`"). Do NOT set
+> `disable-model-invocation`: it would break that dispatch, leaving Phase 8's
+> retry loop with no bounded implementation. The guardrails are in the body
+> (anti-patterns, stop conditions, iteration cap), not the frontmatter.
+> See `docs/decisions/skill-invocation-doctrine.md`.
 
 Bounded run → analyze → fix → re-run loop with explicit stop conditions. **Loops are dangerous** without guardrails — this skill is the disciplined version.
 
@@ -29,6 +36,7 @@ Bounded run → analyze → fix → re-run loop with explicit stop conditions. *
 - **Whole-suite re-runs after a 1-file change.** If only `src/auth.py` changed, run `pytest tests/auth/` (or the smallest unit that exercises the change), not the whole suite. Whole-suite runs every iteration burn time and tokens.
 - **Catching exceptions to suppress failures.** Wrapping the failing call in a `try` that swallows the exception is the worst-shape fix. Refuse.
 - **Hallucinating fixture state.** When a test fails because a fixture is missing, do not invent fixture data — read the actual fixture, understand what it should contain, fix the source.
+- **Committing, pushing, or opening anything from inside the loop.** The loop edits and re-runs; it does not `git commit`, `git push`, open a PR, or merge. When the cap is hit or a stop condition fires, stop and report to the human — never "finish the job" by landing the change.
 
 ## Stop conditions (the loop ENDS when ANY of these trigger)
 
@@ -36,8 +44,9 @@ Bounded run → analyze → fix → re-run loop with explicit stop conditions. *
 |---|---|
 | All target tests pass | Done — report the diff that fixed it |
 | Max iterations reached (default 5) | Stop, summarize what was tried, escalate to user |
-| Same test fails differently across runs | Flake detector — stop, report flake; do NOT keep "fixing" |
-| Same edit produced same failure twice | No-progress halt — stop, the current approach isn't working |
+| Same test, different failure shape, **no edit between runs** | Flake detector — stop, report flake; do NOT keep "fixing" |
+| Same test, different failure shape, edit between runs | Progress (a cascading bug surfaced) — continue iterating |
+| Same test, same failure shape after an edit | No-progress halt — stop, the current approach isn't working |
 | User pre-approved cap (e.g. `--max=3`) reached | Stop |
 
 ## Workflow
@@ -77,7 +86,7 @@ Track per iteration:
 - Test names that failed
 - Failure shape (assertion message, stack frame, error class)
 
-If iteration N+1 has the *same test* with a *different* failure shape → flake. Stop, report.
+If iteration N+1 has the *same test* with a *different* failure shape **and you made no edit between the runs** → flake. Stop, report. If you did edit between runs, a different failure shape is progress, not flake: a cascading bug just surfaced.
 If iteration N+1 has the *same test* with the *same* failure shape after an edit → no-progress. Stop.
 
 ### Step 6 — Cap iterations
@@ -85,6 +94,7 @@ If iteration N+1 has the *same test* with the *same* failure shape after an edit
 Default 5. Configurable. When cap is reached:
 - Summarize: which tests still fail, what was tried, what was tried-and-rolled-back
 - Surface for user decision — don't silently exceed
+- Never raise the cap on your own authority — a higher cap comes from an explicit user request, not from the loop's own sense that it is close.
 
 ## Example output (cap reached)
 
@@ -114,4 +124,4 @@ Honest "stopped" reports are infinitely more useful than a forced "passed" via a
 - `/systematic-debugging` — for root-cause investigation when the failure cause is unclear
 - `/tdd-workflow` — when working in red→green→refactor mode and a test stays red
 
-<!-- Cross-platform: see AGENTS.md in the repository root for deployment details. -->
+<!-- Cross-platform: see AGENTS.md in the repository root for Cursor, Claude Code, and Copilot paths. -->

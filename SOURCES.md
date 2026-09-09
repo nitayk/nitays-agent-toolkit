@@ -36,6 +36,23 @@ tooling, infrastructure, internal repositories/hosts, product-specific stacks)
 was intentionally **excluded or scrubbed** so this public pack stays generic.
 This source is pulled by hand — it is **not** covered by `acr update`.
 
+### 2026-09 sync
+
+Refreshed the manual port after a long gap. Every ported file was scanned for
+employer-identifying tokens (products, internal infra/MCP, internal hosts/orgs)
+before inclusion; skills whose core purpose is an internal system were left out.
+
+- **Added (generic, new to this pack):** `framework-uplift`, `doubt-driven-development`,
+  `plan-arbiter`, `skill-scout`, `agent-watchdog`, `debugging-mcp-servers`,
+  `agent-mailbox`, `flint-charting`, `loopcraft`, `deprecation-and-migration`.
+- **Updated (upstream had matured):** `agent-browser`, `docker-patterns`,
+  `generate-changelog`, `pr-workflow`, `security-audit`, `strategic-compact`,
+  `fix-issue`, `github-ops`, `deep-research`, `multi-agent-branching`, `test-until-pass`.
+- **Deliberately excluded** (core-bound to internal systems): the code-graph /
+  topology family, internal deploy/telemetry onboarding, internal data/trace
+  tooling, and internal knowledge/orchestration skills. A second pass will bring
+  over skills that need per-file scrubbing (e.g. `e2e`, `create-pr`, `gh-search`).
+
 ## Custom (not synced from upstream)
 
 These skills are original and maintained directly in this repo:

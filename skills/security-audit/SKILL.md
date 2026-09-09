@@ -2,7 +2,7 @@
 name: security-audit
 description: "Use for the deeper periodic security audit at release boundaries — runs language-specific scanners, secret detection, and OWASP-mapped review with concrete tool commands. Do NOT use for the per-PR security gate (use /security-review — lighter, faster, runs every PR). Triggers: 'security audit', 'audit before release', 'security review of release N'."
 disable-model-invocation: true
-last-reviewed: 2026-05-20
+last-reviewed: 2026-07-11
 ---
 
 # Security Audit
@@ -44,6 +44,19 @@ Identify what you're auditing:
 
 If the audit scope is large (whole repo), narrow first — pick the highest-risk subset (auth, payment, public APIs) and audit those first.
 
+**Run a quick STRIDE pass over each trust boundary** to prioritize where Step 3 digs deepest — a lens, not a ceremony:
+
+| Threat | Question to ask at the boundary |
+|---|---|
+| **S**poofing | Can a caller pretend to be someone else here (missing/weak authn, forgeable tokens)? |
+| **T**ampering | Can data crossing this boundary be modified in transit or at rest (no integrity check, no TLS)? |
+| **R**epudiation | If someone abuses this surface, would we know who did it (audit logging)? |
+| **I**nformation disclosure | What leaks if this boundary is breached (secrets in errors, verbose responses, cross-tenant reads)? |
+| **D**enial of service | Can this surface be exhausted cheaply (no rate limit, unbounded input, amplification)? |
+| **E**levation of privilege | Can a low-privilege caller reach a high-privilege operation through this path (missing authz, confused deputy)? |
+
+Boundaries with multiple live STRIDE rows get the deepest manual review. Count **LLM/agent integrations** as trust boundaries too — model output is untrusted input (see the AI/LLM review below).
+
 ### Step 2 — Run language-specific scanners
 
 | Language / ecosystem | SAST | Secrets | Deps |
@@ -67,6 +80,26 @@ For each high-risk surface (auth, payment, file upload, deserialization, server-
 - Verify input validation, output encoding, authn/authz checks, rate limiting
 
 Reference: [OWASP Top 10](https://owasp.org/www-project-top-ten/), [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/) for verification level.
+
+#### SSRF deep dive (server-side request surfaces)
+
+When the audited service fetches URLs influenced by user input (webhooks, URL previews, importers, callbacks, link unfurling), check each of these — a partial defense here is a finding:
+
+- **Allowlist, not blocklist** — scheme + host allowlist for outbound destinations; string-matching blocklists are bypassable (decimal IPs, IPv6 mappings, redirects).
+- **Resolve and validate ALL addresses** — resolve every A/AAAA record and reject anything non-unicast: loopback, RFC1918 private ranges, IPv6 unique-local, and link-local — `169.254.169.254` (cloud metadata) is the #1 SSRF target.
+- **TOCTOU / DNS-rebinding gap** — most HTTP clients re-resolve DNS after your validation, so a short-TTL record can rebind to an internal IP between check and connect. For high-risk surfaces, resolve once and connect to the pinned IP (custom dialer/transport), or front outbound traffic with a filtering proxy.
+- **Redirects re-open the hole** — either disable redirect following or re-validate the target on every hop.
+- **Defense in depth at the network layer** — egress policy should independently block the metadata endpoint and internal ranges; app-level checks alone are one bug away from useless.
+
+#### AI / LLM feature review (OWASP LLM Top 10)
+
+If the audited service calls an LLM — chatbot, summarizer, agent, RAG — it has attack surface that classic OWASP review misses. Map it to the [OWASP Top 10 for LLM Applications](https://genai.owasp.org/llm-top-10/):
+
+- **Treat all model output as untrusted input (LLM05).** Trace every path where LLM output flows into `eval`, SQL, a shell, `innerHTML`, or a file path — each unvalidated one is a finding, same severity logic as raw user input reaching that sink.
+- **Assume prompts can be hijacked (LLM01).** Any untrusted text in the context window — user message, fetched web page, PDF, tool result — can carry instructions. The system prompt is not a security boundary; verify permissions are enforced in code, not in the prompt.
+- **Secrets and cross-tenant data out of prompts (LLM02/LLM07).** Anything in the context can be echoed back to the caller. Flag API keys, other users' data, or full system prompts placed where the model can repeat them.
+- **Excessive agency (LLM06).** For agent/tool-use integrations: tools scoped to minimum permissions, confirmation required for destructive or irreversible actions, every tool argument validated.
+- **RAG tenant isolation.** Retrieval indexes must enforce the caller's tenancy — a shared index without a tenant filter is a cross-tenant read (Information disclosure in the STRIDE pass).
 
 ### Step 4 — Generate the report
 
@@ -118,4 +151,9 @@ For HIGH findings: don't accept a fix as resolved without exercising it. See `/e
 - `/security-review` — per-PR gate (lighter, faster, runs every PR — *not* a substitute for this skill at release boundaries)
 - `/generate-changelog` — pair with security-audit at release boundaries to capture remediated CVEs in release notes
 
-<!-- Cross-platform: see AGENTS.md in the repository root for deployment details. -->
+<!--
+STRIDE lens, SSRF deep dive, and AI/LLM review adapted from addyosmani/agent-skills
+`security-and-hardening` (https://github.com/addyosmani/agent-skills), MIT License,
+© Addy Osmani. Copied once with attribution — not auto-synced. See SOURCES.md.
+Cross-platform: see AGENTS.md in the repository root for Cursor, Claude Code, and Copilot paths.
+-->

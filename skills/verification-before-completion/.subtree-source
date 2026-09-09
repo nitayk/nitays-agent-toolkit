@@ -1,9 +1,0 @@
-# Subtree Source Information
-# This directory is maintained as a snapshot from an upstream repository.
-# DO NOT manually edit files in this directory.
-# Use the update script to pull in changes from upstream.
-
-SOURCE_REPO=https://github.com/obra/superpowers.git
-SOURCE_PATH=skills/verification-before-completion
-LAST_SYNC_COMMIT=896224c4b1879920ab573417e68fd51d2ccc9072
-LAST_SYNC_DATE=2026-06-18 15:44:22 -0700

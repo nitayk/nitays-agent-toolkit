@@ -1,10 +1,17 @@
 ---
 name: fix-issue
 description: "Use when implementing a fix for a GitHub issue. Fetch issue by number, analyze, implement fix with tests. Make sure to use when user says: fix issue #123, implement fix for #456, /fix-issue, or provides a GitHub issue number to fix."
-disable-model-invocation: true
 last-reviewed: 2026-05-20
 ---
 # Fix GitHub Issue
+
+> **Invocation: routed.** Its routing surface is a by-name cross-reference from
+> a reachable skill: `/e2e` Phase 0 dispatches it as the issue-number entry path
+> ("if the input matches `#\d+` … invoke `/fix-issue` first"). Do NOT set
+> `disable-model-invocation`: it would break that dispatch, leaving `/e2e` no way
+> to start from an issue number. Safety lives in the body below (feature-branch
+> rule, the step 9 PR question, and the outward-action gates), not in the
+> frontmatter. See `docs/decisions/skill-invocation-doctrine.md`.
 
 Fetch a GitHub issue, analyze it, and implement the fix.
 
@@ -51,6 +58,13 @@ Fetch a GitHub issue, analyze it, and implement the fix.
 - If the issue is unclear, ask for clarification before implementing
 - If the fix is complex, present a plan before coding
 
+## Outward-action gates (load-bearing)
+- Never push. Step 9 asks the user about a PR; pushing the branch and opening the PR belongs to `/create-pr` after they say yes.
+- Never merge anything, and never pass `--auto`.
+- Do not write to the issue. `gh issue view` is the only GitHub interaction this skill has. Never run `gh issue comment`, `gh issue close`, `gh issue reopen`, or edit labels/assignees unless the user explicitly asks for that specific action.
+- Never force-push or rewrite published history.
+- A `Fixes #<number>` line in a PR body closes the issue when a human merges. That is the intended path — not a licence to close the issue directly.
+
 ## Best Practices
 - The issue should have clear reproduction steps
 - For complex issues, consider using Plan Mode first
@@ -66,4 +80,4 @@ Fetch a GitHub issue, analyze it, and implement the fix.
 - `/create-pr` - Create PR after fix is complete
 - `/tdd-workflow` - Test-driven development patterns
 
-<!-- Cross-platform: see AGENTS.md in the repository root for deployment details. -->
+<!-- Cross-platform: see AGENTS.md in the repository root for Cursor, Claude Code, and Copilot paths. -->

@@ -2,7 +2,6 @@
 name: webapp-testing
 description: Toolkit for interacting with and testing local web applications using Playwright. Supports verifying frontend functionality, debugging UI behavior, capturing browser screenshots, and viewing browser logs.
 license: Complete terms in LICENSE.txt
-last-reviewed: 2026-05-20
 ---
 
 # Web Application Testing
@@ -95,4 +94,3 @@ with sync_playwright() as p:
   - `element_discovery.py` - Discovering buttons, links, and inputs on a page
   - `static_html_automation.py` - Using file:// URLs for local HTML
   - `console_logging.py` - Capturing console logs during automation
-<!-- Cross-platform: see AGENTS.md in the repository root for deployment details. -->

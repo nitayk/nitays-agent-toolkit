@@ -428,5 +428,3 @@ Output from post-hoc analyzer. Located at `<grading-dir>/analysis.json`.
   }
 }
 ```
-
-<!-- Cross-platform: see AGENTS.md in the repository root for deployment details. -->
