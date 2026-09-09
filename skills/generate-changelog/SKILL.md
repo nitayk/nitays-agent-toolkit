@@ -18,7 +18,7 @@ Generate a changelog from recent commits following Keep a Changelog format.
 **SKIP WHEN:**
 - No conventional commits (feat:, fix:, etc.)
 - No git tags for version ranges
-- Working in the mobile-agent-toolkit repo itself — its release model is bump-on-PR with **no** CHANGELOG automation (ADR-011). This skill targets *consumer* repos that maintain a `CHANGELOG.md`.
+- Working in a repo whose release model has **no** CHANGELOG automation (e.g. bump-on-PR). This skill targets repos that maintain a `CHANGELOG.md`.
 
 ## Core Directive
 
@@ -33,19 +33,36 @@ Generate a changelog from recent commits following Keep a Changelog format.
 
 ## Process
 
-1. Fetches commit history between tags (or since last tag if no tags provided)
-2. Groups commits by conventional commit type:
-   - **Added** (feat:) - New features
-   - **Fixed** (fix:) - Bug fixes
-   - **Changed** (BREAKING CHANGE:) - Breaking changes
-   - **Documentation** (docs:) - Documentation updates
-   - **Refactoring** (refactor:) - Code refactoring
-   - **Performance** (perf:) - Performance improvements
-   - **Tests** (test:) - Test additions/changes
-   - **Chore** (chore:) - Maintenance tasks
-3. Formats output following [Keep a Changelog](https://keepachangelog.com/) conventions
-4. Appends to existing CHANGELOG.md or creates new one
-5. Includes date and version information
+1. **Resolve the version range.**
+   - Explicit `from-tag to-tag`: use it directly.
+   - No args given: newest tag → HEAD. Get the newest tag with
+     `git describe --tags --abbrev=0`, then use `<latest-tag>..HEAD`.
+   - **No tags exist at all:** fall back to full history (`git log`) and label
+     the section `Unreleased` — do **not** error out.
+
+2. **Fetch the commits in range:**
+   ```bash
+   git log <from>..<to> --no-merges --pretty=format:'%s%x1f%b%x1e'
+   ```
+   `%x1f` (unit sep) / `%x1e` (record sep) delimit subject/body/records so
+   multi-line bodies carrying `BREAKING CHANGE:` footers parse cleanly.
+
+3. **Group by conventional-commit type** (the prefix before the first `:`):
+   - **Added** ← `feat:` · **Fixed** ← `fix:` · **Changed** ← `BREAKING CHANGE:`
+     or a `!` bang (e.g. `feat!:`) · **Documentation** ← `docs:` ·
+     **Refactoring** ← `refactor:` · **Performance** ← `perf:` ·
+     **Tests** ← `test:` · **Chore** ← `chore:`
+   - **Non-conventional commits** (no recognized prefix): collect under an
+     **Other** heading — never drop them silently.
+
+4. **Derive version + date.** Version = the `to-tag` with any leading `v`
+   stripped (`v1.3.0` → `1.3.0`); if the range ends at HEAD with no tag, use
+   `Unreleased`. Date = today in ISO form; header is `## [<version>] - YYYY-MM-DD`.
+
+5. **Preview, then write.** Show the rendered changelog and confirm with the
+   user before writing. Then prepend the new section to an existing
+   `CHANGELOG.md` (preserving earlier entries) or create the file with a
+   Keep a Changelog header if absent.
 
 ## Examples
 
@@ -85,4 +102,4 @@ Follows [Keep a Changelog](https://keepachangelog.com/) format:
 - Uses conventional commit messages (feat:, fix:, etc.)
 - Requires git tags for version ranges
 
-<!-- Cross-platform: see AGENTS.md in the repository root for deployment details. -->
+<!-- Cross-platform: see AGENTS.md in the repository root for Cursor, Claude Code, and Copilot paths. -->

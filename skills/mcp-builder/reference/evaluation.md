@@ -600,5 +600,3 @@ If tasks are timing out:
 - Check if tools are returning too much data
 - Verify pagination is working correctly
 - Consider simplifying complex questions
-
-<!-- Cross-platform: see AGENTS.md in the repository root for deployment details. -->

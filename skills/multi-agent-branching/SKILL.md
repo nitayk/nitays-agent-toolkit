@@ -5,6 +5,12 @@ last-reviewed: 2026-05-20
 ---
 # Multi-Agent Branching
 
+> **Invocation: routed.** Wrapper/gate skills measure 0% description-trigger
+> recall — wire a CLAUDE.md rule or hook instructing the model to
+> invoke this skill before file edits/commits in multi-agent work.
+> Do NOT set `disable-model-invocation`: the routing rule works by model
+> invocation. See `docs/decisions/skill-invocation-doctrine.md`.
+
 Prevent concurrent AI agents from overwriting each other's work. All agents must work in feature branches, never on main/master.
 
 ## When to Use This Skill
@@ -102,4 +108,4 @@ fi
 - git-workflow - Clean commit history on feature branch
 - pr-workflow - Merge feature branch via PR
 
-<!-- Cross-platform: see AGENTS.md in the repository root for deployment details. -->
+<!-- Cross-platform: see AGENTS.md in the repository root for Cursor, Claude Code, and Copilot paths. -->

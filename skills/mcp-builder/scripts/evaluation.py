@@ -10,7 +10,7 @@ import re
 import sys
 import time
 import traceback
-import defusedxml.ElementTree as ET
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
 
@@ -371,4 +371,3 @@ Examples:
 
 if __name__ == "__main__":
     asyncio.run(main())
-# Cross-platform: see AGENTS.md in the repository root for deployment details.

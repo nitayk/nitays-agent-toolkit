@@ -47,5 +47,3 @@ Subagent (general-purpose):
 ```
 
 **Reviewer returns:** Status, Issues (if any), Recommendations
-
-<!-- Cross-platform: see AGENTS.md in the repository root for deployment details. -->

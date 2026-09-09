@@ -245,4 +245,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-# Cross-platform: see AGENTS.md in the repository root for deployment details.

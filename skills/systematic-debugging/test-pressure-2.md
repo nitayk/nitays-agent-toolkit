@@ -66,5 +66,3 @@ You're exhausted. You have dinner plans at 8:30pm (already late). Code review is
 ## Choose A, B, or C
 
 Which do you choose? Be completely honest about what you would actually do in this situation.
-
-<!-- Cross-platform: see AGENTS.md in the repository root for deployment details. -->
