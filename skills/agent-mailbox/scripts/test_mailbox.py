@@ -15,7 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import mailbox  # noqa: E402
 
-STALE_S = 7 * 3600  # older than the 6h default peer_stale_h
+STALE_S = 8 * 86400  # older than the 7-day default peer_stale_h
 
 
 def make_mailbox(root: Path, name: str, hb_age_s: float = 0, inbox_msgs: int = 0) -> Path:
@@ -44,7 +44,7 @@ class PruneTests(unittest.TestCase):
         self._tmp.cleanup()
 
     def prune(self):
-        return mailbox.prune_run(max_age_h=24, peer_stale_h=6)
+        return mailbox.prune_run(max_age_h=24, peer_stale_h=mailbox.DEFAULT_PEER_STALE_H)
 
     def test_foreign_dir_without_heartbeat_survives(self):
         """A directory that is not a mailbox must NEVER be deleted, however old."""
@@ -62,6 +62,13 @@ class PruneTests(unittest.TestCase):
         self.assertTrue((d / "inbox" / "m0.json").exists())
         self.assertEqual(res["removed_dead_peers"], [])
 
+    def test_peer_idle_over_a_weekend_keeps_its_mailbox(self):
+        """the 6h prune deleted 5 manager mailboxes over a quiet Saturday."""
+        d = make_mailbox(self.root, "weekend", hb_age_s=60 * 3600)
+        res = self.prune()
+        self.assertTrue(d.exists())
+        self.assertEqual(res["removed_dead_peers"], [])
+
     def test_stale_empty_peer_is_removed(self):
         d = make_mailbox(self.root, "ghost", hb_age_s=STALE_S)
         res = self.prune()
@@ -75,18 +82,55 @@ class PruneTests(unittest.TestCase):
 
     def test_protect_overrides_staleness(self):
         d = make_mailbox(self.root, "me", hb_age_s=STALE_S)
-        mailbox.prune_run(max_age_h=24, peer_stale_h=6, protect="me")
+        mailbox.prune_run(max_age_h=24, peer_stale_h=mailbox.DEFAULT_PEER_STALE_H, protect="me")
         self.assertTrue(d.exists())
 
-    def test_expired_messages_pruned_but_dir_kept_when_fresh(self):
+    def test_unread_mail_survives_a_day_and_is_never_deleted_outright(self):
+        """register auto-prunes; letters that waited out a crash unread were deleted at 24h
+        (letters were lost after a crash)."""
         d = make_mailbox(self.root, "busy", inbox_msgs=1)
         msg = d / "inbox" / "m0.json"
+        old = time.time() - 3 * 86400
+        os.utime(msg, (old, old))
+        res = self.prune()
+        self.assertTrue(msg.exists())
+        self.assertEqual(res["expired_messages"], 0)
+        old = time.time() - 8 * 86400
+        os.utime(msg, (old, old))
+        self.prune()
+        self.assertFalse(msg.exists())
+        self.assertTrue((d / "expired" / "m0.json").exists())
+
+    def test_old_claimed_mail_moves_to_expired_then_ages_out(self):
+        d = make_mailbox(self.root, "busy")
+        (d / "in-progress").mkdir(exist_ok=True)
+        msg = d / "in-progress" / "m1.json"
+        msg.write_text("{}")
         old = time.time() - 25 * 3600
         os.utime(msg, (old, old))
         res = self.prune()
         self.assertFalse(msg.exists())
-        self.assertTrue(d.exists())
+        kept = d / "expired" / "m1.json"
+        self.assertTrue(kept.exists())
         self.assertEqual(res["expired_messages"], 1)
+        week = time.time() - 8 * 86400
+        os.utime(kept, (week, week))
+        self.prune()
+        self.assertFalse(kept.exists())
+        self.assertTrue(d.exists())
+
+    def test_stale_peer_keeps_its_dir_while_expired_mail_is_kept(self):
+        """Moving mail into expired/ must not leave a dead peer looking empty and get the
+        whole dir (expired/ included) deleted in the same pass."""
+        d = make_mailbox(self.root, "crashed", hb_age_s=STALE_S)
+        (d / "in-progress").mkdir(exist_ok=True)
+        msg = d / "in-progress" / "m1.json"
+        msg.write_text("{}")
+        old = time.time() - 25 * 3600
+        os.utime(msg, (old, old))
+        res = self.prune()
+        self.assertTrue((d / "expired" / "m1.json").exists())
+        self.assertEqual(res["removed_dead_peers"], [])
 
 
 class NameValidationTests(unittest.TestCase):

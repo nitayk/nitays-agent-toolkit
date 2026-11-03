@@ -62,5 +62,3 @@ regenerating `flow.svg`; never hand-edit `flow.html`.
 | red bold | HARD GATE (P6, P7) |
 | yellow | special / partial mode (spike P6 cleanup-only, P8 empirical, P8 restore-semantics) |
 | diamond | decision point (classification, conditional, executor pick) |
-
-<!-- Cross-platform: see AGENTS.md in the repository root for deployment details. -->

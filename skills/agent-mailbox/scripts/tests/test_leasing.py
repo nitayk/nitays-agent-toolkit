@@ -2,9 +2,9 @@
 """Behavioral tests for agent-mailbox leasing + the broadcast offline-peer fix.
 
 Parameterized by the mailbox.py under test so the SAME suite can prove:
-  known-good -> all pass (baseline)
-  pre-fix    -> lease tests error, broadcast test fails (proves tests can detect absence)
-  post-fix   -> all pass
+  personal  -> all pass (known-good baseline)
+  toolkit pre  -> lease tests error, broadcast test fails (proves tests can detect absence)
+  toolkit post -> all pass
 Each test gets a fresh AGENT_MAILBOX_ROOT; the live ~/.agent-mailbox is never touched.
 
 Defaults to THIS repo's own scripts/mailbox.py (resolved relative to this file) so
@@ -99,7 +99,7 @@ def run_leasing_suite():
     r = fresh(); reg(r, "sA", "agent-a"); reg(r, "sB", "agent-b")
     run(r, "sA", "lease", "--resource", "repo-o")
     hb = r / "agent-a" / "heartbeat.json"
-    old = time.time() - (7 * 3600)          # older than DEFAULT_PEER_STALE_H (6h)
+    old = time.time() - (7 * 3600)          # older than LEASE_ORPHAN_H (6h)
     os.utime(hb, (old, old))
     _, out, _ = run(r, "sB", "leases")
     check("dead_holder_reads_orphaned", '"state": "orphaned"' in out, "")
@@ -202,8 +202,7 @@ def _load_mailbox(root):
     os.environ["AGENT_MAILBOX_ROOT"] = str(root)
     spec.loader.exec_module(mb)
     from pathlib import Path as _P
-    mb.ROOT = _P(root)
-    mb.LEASES = mb.ROOT / ".leases"
+    mb.ROOT = _P(root)                  # leases_dir() derives from ROOT at call time
     return mb
 
 
@@ -251,6 +250,6 @@ def test_overlapping_acquire_is_serialized():
     winners = [h for h, r in results.items() if r.get("ok")]
     assert len(winners) == 1, (
         f"expected exactly one winner, got {len(winners)}: {winners}. "
-        f"Lease files on disk: {sorted(os.listdir(mb.LEASES))}. "
+        f"Lease files on disk: {sorted(os.listdir(mb.leases_dir()))}. "
         "Both agents hold overlapping lanes — the scan-then-write section is not serialized."
     )

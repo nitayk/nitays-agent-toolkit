@@ -58,7 +58,7 @@ P0: "Phase 0: INTAKE" {
   s25: "S2.5 /prd-generation\n→ docs/superpowers/prds/" { class: active; tooltip: "Generate a short PRD from a raw idea. Captures problem, requirements, success criteria." }
   s3: "S3 classify + stack tag" { class: active; tooltip: "Pick task type and stack tag. Drives skip-logic and stack-conditional skills downstream." }
   s4: "S4 phase tracker" { class: active; tooltip: "Build the in-memory task list of all active phases. Persisted to e2e-tracker.md in P4." }
-  s5: "S5 /rename" { class: active; tooltip: "Built-in command. Renames session to e2e-{class}-{topic-slug} for findability." }
+  s5: "S5 name session\n(first pass)" { class: active; tooltip: "Slug e2e-{class}-{topic-slug} from the optimized prompt. Title = plain feature name, never the app auto-title shape (leading 'Plugin name e2e' or '/plugin-name:') (desktop: set_session_title; CLI: user runs /rename). Unpushed app-made branch renamed to the slug; worktree folder kept. Refined in P3 S0.5." }
 
   s1 -> s1_super -> q_issue
   q_issue -> s1_fix: YES
@@ -145,13 +145,14 @@ P3: "Phase 3: PLANNING" {
 
   scan: "S0 codebase scan\n(code-explorer subagent)" { class: active; tooltip: "Always runs. Scan codebase for existing patterns related to the task." }
   forensics: "/git-forensics\nownership + churn" { class: active; tooltip: "File ownership, churn, recent incidents on affected files. Avoid re-breaking just-fixed code." }
-  canon: "canonical-source rule\nfor submodule assets" { class: active; tooltip: "If change targets submodule asset (e.g. mobile-agent-toolkit skill), FIRST read canonical path, not synced copy." }
+  canon: "canonical-source rule\nfor submodule assets" { class: active; tooltip: "If change targets submodule asset (e.g. a skill synced from a toolkit repo), FIRST read canonical path, not synced copy." }
+  name: "S0.5 refine name\n(second pass)" { class: active; tooltip: "Re-derive slug from P1-P3 findings. Desktop: always re-set title (repairs an overwritten one); CLI: repeat /rename hint only if title changed. Rename branch whenever it isn't the slug yet and all P0 S5 conditions hold." }
   q_5tasks: "5+ tasks\nor multi-subsystem?" { class: decision }
   break: "/task-breakdown\n(decompose first)" { class: active; tooltip: "Decompose 5+ task plans before /writing-plans formalizes them." }
   plans: "/writing-plans" { class: active; tooltip: "Formalize task list with TDD steps + verification per task." }
   out: "plan doc\n→ docs/superpowers/plans/" { class: active }
 
-  scan -> forensics -> canon -> q_5tasks
+  scan -> forensics -> canon -> name -> q_5tasks
   q_5tasks -> break: YES
   q_5tasks -> plans: NO
   break -> plans -> out
@@ -313,7 +314,7 @@ P8: "Phase 8: VERIFICATION" {
   q_sec: "security-sensitive\ncode?\n(crypto/network/payload/authz)" { class: decision }
   empirical: "EMPIRICAL not static\nrun against reference\n(Python hmac stdlib, etc.)" { class: blocker; tooltip: "grep + actionlint + unit tests are NOT sufficient. PR #106 missed 2 real bugs that empirical caught." }
   q_restore: "command is\nrestore/lock/snapshot/pin?" { class: decision }
-  restore: "Restore-semantics check\n(restore must NOT mutate\nthe recorded state)" { class: blocker; tooltip: "Test: capture snapshot → mutate upstream → call restore → assert byte-identical. Caught ckpm bug where restore advanced the lockfile." }
+  restore: "Restore-semantics check\n(restore must NOT mutate\nthe recorded state)" { class: blocker; tooltip: "Test: capture snapshot → mutate upstream → call restore → assert byte-identical. Caught a bug where restore advanced the lockfile." }
   q_upgrade: "interpreter / dep / base-image\nupgrade?" { class: decision }
   smoke: "Smoke-test fast path\n(smallest Dockerfile build\n+ targeted in-container test)" { class: active; tooltip: "~3-5min vs 15-30min full suite. CI catches the rest. NOT permitted for logic/schema/wire-contract changes." }
   q_flaky: "flaky suite or\nlong retry cycle?" { class: decision }
